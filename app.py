@@ -29,6 +29,10 @@ init_token = {
     1000003: {"token": "", "apply_time": 0, "expires": 0}
 }
 data_file = "/opt/token_cache.data"
+if not os.path.exists(data_file):
+    with open(data_file,'wb') as f:
+        pass
+
 if os.path.getsize(data_file) <= 0:
     with open(data_file,'wb') as f:
         pickle.dump(init_token,f)
@@ -42,7 +46,6 @@ class Wechat(Resource):
         1000003: "72xUUGmrOs9V_E7coumAKNKqvo_OfdNCLVuiu4AtzGo"
     }
     reciver_groups = (1, 2, 3, 4)
-    logger.info("inited app_info")
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument("content",type=str,required=True,help="Wechat content can't be empty")
@@ -54,9 +57,7 @@ class Wechat(Resource):
         if app_id in self.app_info.keys() and group_id in self.reciver_groups and msg:
             access_token = self._get_token(app_id,self.app_info[app_id])
             if access_token:
-                logger.info("start to send msg")
                 result = self._send_message(access_token,app_id,group_id,msg)
-                logger.info("stop to send msg")
                 if result:
                     return {"code": 0, "message": "success"}
                 else:
