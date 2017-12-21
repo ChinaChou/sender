@@ -3,6 +3,8 @@ import datetime
 import smtplib
 import json
 import logging
+import pickle
+import os
 from flask import Flask
 from flask_restful import Api,Resource,reqparse
 from email.mime.text import MIMEText
@@ -21,12 +23,16 @@ stream_handler.setLevel(logging.INFO)
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
-token_cache = {
+init_token = {
     1: {"token": "", "apply_time": 0, "expires": 0},
     1000002: {"token": "", "apply_time": 0, "expires": 0},
     1000003: {"token": "", "apply_time": 0, "expires": 0}
 }
-
+data_file = "/opt/token_cache.data"
+if os.path.getsize(data_file) <= 0:
+    with open(data_file,'wb') as f:
+        pickle.dump(init_token,f)
+    logger.info("inited token file")
 
 class Wechat(Resource):
     corp_id = "wx222e742cdf473820"
@@ -36,7 +42,7 @@ class Wechat(Resource):
         1000003: "72xUUGmrOs9V_E7coumAKNKqvo_OfdNCLVuiu4AtzGo"
     }
     reciver_groups = (1, 2, 3, 4)
-
+    logger.info("inited app_info")
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument("content",type=str,required=True,help="Wechat content can't be empty")
@@ -48,7 +54,9 @@ class Wechat(Resource):
         if app_id in self.app_info.keys() and group_id in self.reciver_groups and msg:
             access_token = self._get_token(app_id,self.app_info[app_id])
             if access_token:
+                logger.info("start to send msg")
                 result = self._send_message(access_token,app_id,group_id,msg)
+                logger.info("stop to send msg")
                 if result:
                     return {"code": 0, "message": "success"}
                 else:
@@ -59,6 +67,7 @@ class Wechat(Resource):
             return {"code": 10005, "message": "app_id, group_id, and message one or all of them is invalided"}
 
     def _get_token(self,app_id,secret,timeout=5):
+        token_cache = self._get_data()
         current_timestamp = datetime.datetime.timestamp(datetime.datetime.now())
         delta_time = current_timestamp - token_cache[app_id]["apply_time"]
         if delta_time > token_cache[app_id]["expires"]:
@@ -75,11 +84,12 @@ class Wechat(Resource):
                 token_cache[app_id]["token"] = access_token
                 token_cache[app_id]["apply_time"] = current_timestamp
                 token_cache[app_id]["expires"] = expires
+                self._save_data(token_cache)
                 return access_token
         else:
             return token_cache[app_id]["token"]
 
-    def _send_message(self,token,app_id,group_id,message,timeout=5):
+    def _send_message(self,token,app_id,group_id,message,timeout=2):
         msg_template = {
             "toparty": "",
             "msgtype": "text",
@@ -101,6 +111,15 @@ class Wechat(Resource):
             res.close()
             if result["errcode"] == 0:
                 return True
+    
+    def _save_data(self,data):
+        with open(data_file,"wb") as f:
+            pickle.dump(data,f)
+
+    def _get_data(self):
+        with open(data_file,'rb') as f:
+            ret = pickle.load(f)
+        return ret
 
 class Email(Resource):
     smtp_host = "mail.faxindai.com"
