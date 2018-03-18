@@ -39,11 +39,11 @@ if os.path.getsize(data_file) <= 0:
     logger.info("inited token file")
 
 class Wechat(Resource):
-    corp_id = "wx222e742cdf473820"
+    corp_id = "wx2242cdf4720"
     app_info = {
-        1: "xKWBzqccTgGd9E4DgtohozveeR7KffQ4_vZELza4q34",
-        1000002: "SagsHGWZbBXgqU2b7A8uEYCNKU7omdgY9L1pnIo5DUI",
-        1000003: "72xUUGmrOs9V_E7coumAKNKqvo_OfdNCLVuiu4AtzGo"
+        1: "xKWBzqccTgGd9E4ozvefQ4_vZELza4q34",
+        1000002: "SagsGWZbb7A8uEYCNKU7omdgY9L1pnIo5DUI",
+        1000003: "72xUV_E7coumAKNKqvo_OfdNCLVuiu4AtzGo"
     }
     reciver_groups = (1, 2, 3, 4)
     def post(self):
